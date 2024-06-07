@@ -3,7 +3,7 @@ const sendBtn = document.querySelector(".bar-wrapper button");
 const messageBox = document.querySelector(".message-box");
 
 let API_URL = "https://api.openai.com/v1/chat/completions";
-let API_KEY = "sk-proj-sk-proj-PH6jdnID4fUm4aBiY9onT3BlbkFJBHTH23vQqA5rBAysYdKI"
+let API_KEY = ""
 
 sendBtn.onclick = function () {
   if(messageBar.value.length > 0){
@@ -18,7 +18,7 @@ sendBtn.onclick = function () {
     </span>
   </div>`;
 
-  let response = 
+  let response =
   `<div class="chat response">
   <img src="img/chatbot.jpg">
   <span class= "new">...
