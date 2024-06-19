@@ -6,6 +6,7 @@ import styles from "@/styles/Home.module.css";
 import axios from "axios";
 import TypingAnimation from "../components/TypingAnimation";
 import OpenAI from "openai";
+import { GetTotalPopulation } from "../pages/api/_inegi.js";
 
 let thread;
 let run;
@@ -19,6 +20,12 @@ const openai = new OpenAI({
   apiKey: secretKey,
   dangerouslyAllowBrowser: true,
 });
+
+async function get_total_population() {
+  const response = await GetTotalPopulation();
+  return response;
+}
+
 const inter = Inter({ subsets: ["latin"] });
 
 export default function Home() {
@@ -166,6 +173,41 @@ export default function Home() {
     </div>
   );
 }
+
+async function CallRequiredFunctions(required_actions) {
+  let tool_outputs = [];
+  let functionName;
+  let output;
+  let final_str;
+
+  for (let i = 0; i < required_actions.length; i++) {
+    functionName = required_actions[i].function.name;
+
+    if (functionName == "get_total_population") {
+      output = get_total_population();
+      console.log("Function Calling output: " + output);
+      final_str = "";
+
+      for (let i = 0; i < output.length; i++) {
+        final_str += "".join(output[i]);
+      }
+
+      tool_outputs.push({
+        tool_call_id: required_actions[i].id,
+        output: final_str,
+      });
+    } else {
+      throw new Error("Unknown function: " + func_name);
+    }
+  }
+
+  await openai.beta.threads.runs.submit_tool_outputs(
+    thread.id,
+    run.id,
+    tool_outputs
+  );
+}
+
 async function CheckForAnswer() {
   isWaiting = true;
   // Use runs to wait for the assistant response and then retrieve it
@@ -175,6 +217,13 @@ async function CheckForAnswer() {
   // Polling mechanism to see if runStatus is completed
   // This should be made more robust.
   while (runStatus.status !== "completed") {
+    if (runStatus.status !== "requires_action") {
+      console.log("FUNCTION CALLING NOW...");
+      CallRequiredFunctions(
+        runStatus.required_action.submit_tool_outputs.tool_calls
+      );
+    }
+
     await new Promise((resolve) => setTimeout(resolve, 2000));
     runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
   }
@@ -211,7 +260,9 @@ async function CheckForAnswer() {
 
 async function main() {
   console.log("Main");
-  try {
+  const response = await get_total_population();
+  console.log(response);
+  /*try {
     assistant = await openai.beta.assistants.retrieve(
       "asst_R0W2WQSuBcgMuuW9fgl18qxm"
     ); // Log the first greeting
@@ -237,7 +288,7 @@ async function askOpenAi(userQuestion) {
 
   run = await openai.beta.threads.runs.create(thread.id, {
     assistant_id: assistant.id,
-  });
+  });*/
 }
 
 // Call the main function
