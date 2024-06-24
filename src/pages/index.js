@@ -6,6 +6,8 @@ import styles from "@/styles/Home.module.css";
 import axios from "axios";
 import TypingAnimation from "../components/TypingAnimation";
 import OpenAI from "openai";
+import { GetTotalPopulation } from "../pages/api/_inegi.js";
+import { AssistantManager } from "../pages/api/assistant_manager.js";
 
 let thread;
 let run;
@@ -13,12 +15,19 @@ let assistant;
 let threadPosition = 0;
 let isWaiting = true;
 let UpdateChatLog;
+let assistantManager;
 
 const secretKey = "";
 const openai = new OpenAI({
   apiKey: secretKey,
   dangerouslyAllowBrowser: true,
 });
+
+async function get_total_population() {
+  const response = await GetTotalPopulation();
+  return response;
+}
+
 const inter = Inter({ subsets: ["latin"] });
 
 export default function Home() {
@@ -39,10 +48,18 @@ export default function Home() {
     sendMessage(inputValue);
     setInputValue("");
   };
+
   const sendMessage = (message) => {
-    askOpenAi(inputValue);
-    isWaiting = true;
-    CheckForAnswer();
+    //askOpenAi(inputValue);
+    //isWaiting = true;
+    //CheckForAnswer();
+    try {
+      if (assistantManager != null) {
+        UserResponse(inputValue);
+      }
+    } catch (error) {
+      console.error(error);
+    }
   };
   /*const sendMessage = (message) => {
     const url = '/api/chat';
@@ -67,6 +84,7 @@ export default function Home() {
     setFile(event.target.files[0]);
     console.log(file);
   }
+
   //<input className="block w-11/12 text-sm text-gray-900 border border-purple-500 rounded-lg cursor-pointer bg-purple-500 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 ml-5 mr-5 mb-5" id="name_input" type="text" value={filename} onChange={e => setFilename(e.target.value)}/>
   async function handleFileSend(event) {
     const fileOpenAi = await openai.files.create({
@@ -166,6 +184,61 @@ export default function Home() {
     </div>
   );
 }
+
+async function CallRequiredFunctions(required_actions) {
+  let tool_outputs_body = {
+    tool_outputs: [],
+  };
+  let functionName;
+  let output;
+  let final_str;
+
+  for (let i = 0; i < required_actions.length; i++) {
+    functionName = required_actions[i].function.name;
+
+    if (functionName == "get_total_population") {
+      const output = await get_total_population();
+      console.log(output);
+      tool_outputs_body.tool_outputs.push({
+        tool_call_id: required_actions[i].id,
+        output: output,
+      });
+    } else {
+      throw new Error("Unknown function: " + func_name);
+    }
+  }
+
+  await openai.beta.threads.runs.submitToolOutputs(
+    thread.id,
+    run.id,
+    tool_outputs_body
+  );
+}
+
+async function UserResponse(_inputValue) {
+  //Open "thinking" animation
+  isWaiting = true;
+
+  //Send message to assistant manager
+  await assistantManager.add_message_to_thread("user", _inputValue);
+
+  //Run thread
+  await assistantManager.run_assistant();
+
+  //Wait for completion
+  await assistantManager.wait_for_completion();
+
+  //Get last message
+  let last_message = await assistantManager.process_message();
+  UpdateChatLog(last_message);
+
+  //Close "thinking" animation
+  isWaiting = false;
+
+  //Print run steps
+  await assistantManager.run_steps();
+}
+
 async function CheckForAnswer() {
   isWaiting = true;
   // Use runs to wait for the assistant response and then retrieve it
@@ -175,6 +248,15 @@ async function CheckForAnswer() {
   // Polling mechanism to see if runStatus is completed
   // This should be made more robust.
   while (runStatus.status !== "completed") {
+    console.log("Run: " + run.id + ", status: " + runStatus.status);
+
+    if (runStatus.status === "requires_action") {
+      console.log("FUNCTION CALLING NOW...");
+      await CallRequiredFunctions(
+        runStatus.required_action.submit_tool_outputs.tool_calls
+      );
+    }
+
     await new Promise((resolve) => setTimeout(resolve, 2000));
     runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
   }
@@ -209,12 +291,66 @@ async function CheckForAnswer() {
   // Find the last message for the current run
 }
 
+async function askOpenAi(userQuestion) {
+  await openai.beta.threads.messages.create(thread.id, {
+    role: "user",
+    content: userQuestion,
+  });
+
+  run = await openai.beta.threads.runs.create(thread.id, {
+    assistant_id: assistant.id,
+  });
+}
+
 async function main() {
-  console.log("Main");
+  console.log("Starting Main");
   try {
+    //Open "thinking" animation
+    isWaiting = true;
+
+    assistantManager = new AssistantManager();
+
+    //Initialize Assistant
+    await assistantManager.initialize("gpt-4o");
+    console.log(assistantManager.assistant.id);
+
+    //Create thread if null
+    if (assistantManager.thread === null) {
+      await assistantManager.create_thread();
+      console.log(assistantManager.thread.id);
+    }
+
+    //Create first message for the context of the chat
+    await assistantManager.add_message_to_thread(
+      "user",
+      "Dame la bienvenida de forma amable y explicame que puedes hacer."
+    );
+
+    //Run thread
+    await assistantManager.run_assistant();
+
+    //Wait for completion
+    await assistantManager.wait_for_completion();
+
+    //Get last message
+    let last_message = await assistantManager.process_message();
+
+    //Update chat message
+    UpdateChatLog(last_message);
+
+    //Close "thinking" animation
+    isWaiting = false;
+
+    //Print run steps
+    await assistantManager.run_steps();
+  } catch (error) {
+    console.error(error);
+  }
+
+  /*try {
     assistant = await openai.beta.assistants.retrieve(
-      "asst_R0W2WQSuBcgMuuW9fgl18qxm"
-    ); // Log the first greeting
+      "asst_OnxH5K3YcN3eWa5w4HD1ldj1"
+    );
 
     // Create a thread
     thread = await openai.beta.threads.create();
@@ -227,17 +363,7 @@ async function main() {
     CheckForAnswer();
   } catch (error) {
     console.error(error);
-  }
-}
-async function askOpenAi(userQuestion) {
-  await openai.beta.threads.messages.create(thread.id, {
-    role: "user",
-    content: userQuestion,
-  });
-
-  run = await openai.beta.threads.runs.create(thread.id, {
-    assistant_id: assistant.id,
-  });
+  }*/
 }
 
 // Call the main function
