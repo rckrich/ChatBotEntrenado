@@ -1,13 +1,9 @@
-import { useState, useEffect } from "react";
-import Head from "next/head";
-import Image from "next/image";
+import { useState } from "react";
 import { Inter } from "next/font/google";
-import styles from "@/styles/Home.module.css";
-import axios from "axios";
 import TypingAnimation from "../components/TypingAnimation";
-import OpenAI from "openai";
 import { GetTotalPopulation } from "../pages/api/_inegi.js";
 import { AssistantManager } from "../pages/api/assistant_manager.js";
+import { TypeAnimation } from 'react-type-animation';
 
 let thread;
 let run;
@@ -16,12 +12,6 @@ let threadPosition = 0;
 let isWaiting = true;
 let UpdateChatLog;
 let assistantManager;
-
-const secretKey = "";
-const openai = new OpenAI({
-  apiKey: secretKey,
-  dangerouslyAllowBrowser: true,
-});
 
 async function get_total_population() {
   const response = await GetTotalPopulation();
@@ -50,9 +40,7 @@ export default function Home() {
   };
 
   const sendMessage = (message) => {
-    //askOpenAi(inputValue);
-    //isWaiting = true;
-    //CheckForAnswer();
+
     try {
       if (assistantManager != null) {
         UserResponse(inputValue);
@@ -61,37 +49,19 @@ export default function Home() {
       console.error(error);
     }
   };
-  /*const sendMessage = (message) => {
-    const url = '/api/chat';
 
-    const data = {
-      model: "gpt-3.5-turbo-0301",
-      messages: [{ "role": "user", "content": message }]
-    };
-    
-   
-
-    axios.post(url, data).then((response) => {
-      console.log(response);
-      setChatLog((prevChatLog) => [...prevChatLog, { type: 'bot', message: response.data.choices[0].message.content }])
-      setIsLoading(false);
-    }).catch((error) => {
-      setIsLoading(false);
-      console.log(error);
-    })
-  }*/
   function handleFileChange(event) {
     setFile(event.target.files[0]);
     console.log(file);
   }
 
-  //<input className="block w-11/12 text-sm text-gray-900 border border-purple-500 rounded-lg cursor-pointer bg-purple-500 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 ml-5 mr-5 mb-5" id="name_input" type="text" value={filename} onChange={e => setFilename(e.target.value)}/>
+
   async function handleFileSend(event) {
     const fileOpenAi = await openai.files.create({
       file: file,
       purpose: "assistants",
     });
-    //await openai.beta.vectorStores.fileBatches.uploadAndPoll("vs_9D7siGuHRgxjMBWgKVZzFfzm", fileOpenAi);
+
     const myVectorStoreFile = await openai.beta.vectorStores.files.create(
       "vs_9D7siGuHRgxjMBWgKVZzFfzm",
       {
@@ -113,77 +83,77 @@ export default function Home() {
       { type: "bot", message: message2 },
     ]);
   };
-  return (
-    <div className="container mx-auto max-w-[700px]">
-      <div className="flex flex-col min-h-screen bg-gray-900">
-        <div
-          id="uploadFile"
-          className="mt-5 mr-5 ml-5 static bg-slate-500 rounded"
-        >
-          <input
-            className="block w-11/12 text-sm text-gray-900 border border-purple-500 rounded-lg cursor-pointer bg-purple-500 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 ml-5 mt-3 mr-5"
-            id="file_input"
-            type="file"
-            onChange={handleFileChange}
-          />
-          <button
-            className="bg-purple-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md mt-3 mb-5 ml-5"
-            onClick={handleFileSend}
-          >
+return (
+    <div className="bg-neutral-800">
+    <div className="container mx-auto max-w-[1000px]">
+      <div className="flex flex-col min-h-screen bg-neutral-900">
+        <div id="uploadFile" style={{display: 'none'}} className="mt-5 mr-5 ml-5 static bg-neutral-1000 rounded">
+
+          <input className="block w-11/12 text-sm text-gray-900 border border-purple-500 rounded-lg cursor-pointer bg-purple-500 dark:text-gray-400 focus:outline-none dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 ml-5 mt-3 mr-5" id="file_input" type="file" onChange={handleFileChange}/>
+          <button className=" bg-gray-600 hover:bg-gray-50 text-black font-bold py-2 px-4 rounded-md mt-3 mb-5 ml-5" onClick={handleFileSend}>
             Enviar
           </button>
         </div>
-        <h1 className="bg-gradient-to-r from-blue-500 to-purple-500 text-transparent bg-clip-text text-center py-3 font-bold text-6xl">
-          D&D
-        </h1>
+        <h1 className="bg-gradient-to-r from-orange-700 to-red-500 text-transparent bg-clip-text text-center py-3 font-bold text-3xl">D&D</h1>
         <div className="flex-grow p-6">
           <div className="flex flex-col space-y-4">
-            {chatLog.map((message, index) => (
-              <div
-                key={index}
-                className={`flex ${
-                  message.type === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                <div
-                  className={`${
-                    message.type === "user" ? "bg-purple-500" : "bg-gray-800"
-                  } rounded-lg p-4 text-white max-w-sm`}
-                >
-                  {message.message}
-                </div>
-              </div>
-            ))}
-            {isWaiting && (
+          {
+        chatLog.map((message, index) => (
+          <div key={index} className={`flex ${
+            message.type === 'user' ? 'justify-end' : 'justify-start'
+            }`}>
+            <div className={`${
+              message.type === 'user' ? 'bg-neutral-700' : 'bg-gray-800'
+            } rounded-3xl p-4 text-white max-w-sm`}>
+              <TypeAnimation
+                sequence={message.message}
+                speed={50}
+                repeat={0}
+                cursor={false}
+              />
+            </div>
+            </div>
+        ))
+            }
+            {
+              isWaiting &&
               <div key={chatLog.length} className="flex justify-start">
-                <div className="bg-gray-800 rounded-lg p-4 text-white max-w-sm">
-                  <TypingAnimation />
-                </div>
+                  <div className="bg-gray-800 rounded-lg p-4 text-white max-w-sm">
+                      <TypingAnimation />
+                  </div>
               </div>
-            )}
-          </div>
+            }
+      </div>
         </div>
         <form onSubmit={handleSubmit} className="flex-none p-6">
-          <div className="flex rounded-lg border border-gray-700 bg-gray-800">
-            <input
-              type="text"
-              className="flex-grow px-4 py-2 bg-transparent text-white focus:outline-none"
-              placeholder="Escribe tú mensaje..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-            />
-            <button
-              type="submit"
-              className="bg-purple-500 rounded-lg px-4 py-2 text-white font-semibold focus:outline-none hover:bg-purple-600 transition-colors duration-300"
-            >
-              Enviar
+          <div className="flex rounded-full border border-gray-700 bg-gray-800">
+            <button type="button" className=" bg-gray-600 rounded-full hover:bg-gray-50 transition-colors duration-300 ml-3 mt-1 mb-1" onClick={onClickShow}>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5 content-center mt-2 mb-2 mr-2.5 ml-2.5">
+                <path fillRule="evenodd" d="M15.621 4.379a3 3 0 0 0-4.242 0l-7 7a3 3 0 0 0 4.241 4.243h.001l.497-.5a.75.75 0 0 1 1.064 1.057l-.498.501-.002.002a4.5 4.5 0 0 1-6.364-6.364l7-7a4.5 4.5 0 0 1 6.368 6.36l-3.455 3.553A2.625 2.625 0 1 1 9.52 9.52l3.45-3.451a.75.75 0 1 1 1.061 1.06l-3.45 3.451a1.125 1.125 0 0 0 1.587 1.595l3.454-3.553a3 3 0 0 0 0-4.242Z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <input type="text" className="flex-grow px-4 py-2 bg-transparent text-white focus:outline-none" placeholder="Envía tu mensaje al D&D chatbot" value={inputValue} onChange={(e) => setInputValue(e.target.value)} />
+            <button type="submit" className=" bg-gray-600 rounded-full hover:bg-gray-50 transition-colors duration-300 mr-3 mt-1 mb-1">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="3" stroke="currentColor" className="fill-current w-4 h-4 m-3 content-center">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5 12 3m0 0 7.5 7.5M12 3v18" />
+            </svg>
             </button>
           </div>
         </form>
-      </div>
+        </div>
     </div>
-  );
+    </div>
+  )
 }
+
+function onClickShow(){
+      const element = document.getElementById("uploadFile");
+      if(element.style.display == "none"){
+        element.style.display = "block";
+      }else{
+        element.style.display = "none";
+      }
+    }
 
 async function CallRequiredFunctions(required_actions) {
   let tool_outputs_body = {
@@ -239,68 +209,7 @@ async function UserResponse(_inputValue) {
   await assistantManager.run_steps();
 }
 
-async function CheckForAnswer() {
-  isWaiting = true;
-  // Use runs to wait for the assistant response and then retrieve it
 
-  let runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-
-  // Polling mechanism to see if runStatus is completed
-  // This should be made more robust.
-  while (runStatus.status !== "completed") {
-    console.log("Run: " + run.id + ", status: " + runStatus.status);
-
-    if (runStatus.status === "requires_action") {
-      console.log("FUNCTION CALLING NOW...");
-      await CallRequiredFunctions(
-        runStatus.required_action.submit_tool_outputs.tool_calls
-      );
-    }
-
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    runStatus = await openai.beta.threads.runs.retrieve(thread.id, run.id);
-  }
-  // Get the last assistant message from the messages array
-
-  while (isWaiting) {
-    const messages = await openai.beta.threads.messages.list(thread.id);
-    const lastMessageForRun = messages.data.filter(
-      (message) => message.run_id === run.id && message.role === "assistant"
-    );
-
-    if (messages.data.length > threadPosition) {
-      if (lastMessageForRun[0].content.length == 1) {
-        /* let response =
-
-              `<div class="chat response">
-              <img src="img/chatbot.jpg">
-                <span>
-              ${lastMessageForRun[0].content[0].text.value}
-                </span>
-              </div>`
-
-            messageBox.insertAdjacentHTML("beforeend", response);*/
-        console.log(messages.data);
-        UpdateChatLog(lastMessageForRun[0].content[0].text.value);
-        isWaiting = false;
-        threadPosition++;
-      }
-    }
-  }
-
-  // Find the last message for the current run
-}
-
-async function askOpenAi(userQuestion) {
-  await openai.beta.threads.messages.create(thread.id, {
-    role: "user",
-    content: userQuestion,
-  });
-
-  run = await openai.beta.threads.runs.create(thread.id, {
-    assistant_id: assistant.id,
-  });
-}
 
 async function main() {
   console.log("Starting Main");
@@ -347,23 +256,6 @@ async function main() {
     console.error(error);
   }
 
-  /*try {
-    assistant = await openai.beta.assistants.retrieve(
-      "asst_OnxH5K3YcN3eWa5w4HD1ldj1"
-    );
-
-    // Create a thread
-    thread = await openai.beta.threads.create();
-
-    run = await openai.beta.threads.runs.create(thread.id, {
-      assistant_id: assistant.id,
-    });
-
-    isWaiting = true;
-    CheckForAnswer();
-  } catch (error) {
-    console.error(error);
-  }*/
 }
 
 // Call the main function
