@@ -11,8 +11,8 @@ const client = new OpenAI({
 });
 
 let thread_id = "";
-let assistant_id = "asst_OnxH5K3YcN3eWa5w4HD1ldj1";
-let vectorStore_id = "vs_EpkJumMK2P9UG2N3Z6jd2rSK";
+let assistant_id = "";
+let vectorStore_id = "";
 
 async function get_total_population() {
   const response = await GetTotalPopulation();
