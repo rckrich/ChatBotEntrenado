@@ -1,5 +1,8 @@
 import OpenAI from "openai";
-import { GetTotalPopulation } from "./_inegi.js";
+import {
+  GetTotalPopulation,
+  GetTotalPopulationByState,
+} from "./inegi_api_helper.js";
 
 const secretKey = "";
 const client = new OpenAI({
@@ -13,6 +16,11 @@ let vectorStore_id = "";
 
 async function get_total_population() {
   const response = await GetTotalPopulation();
+  return response;
+}
+
+async function get_total_population_by_state(_state_id) {
+  const response = await GetTotalPopulationByState(_state_id);
   return response;
 }
 
@@ -102,17 +110,36 @@ export class AssistantManager {
       tool_outputs: [],
     };
     let functionName;
-    let output;
+    let functionArgs;
 
     for (let i = 0; i < required_actions.length; i++) {
       functionName = required_actions[i].function.name;
+      functionArgs = JSON.parse(required_actions[i].function.arguments);
 
       if (functionName == "get_total_population") {
-        const output = await get_total_population();
-        console.log(output);
+        let output = await get_total_population();
+        let final_str = "";
+
+        for (let j = 0; j < output.items; j++) {
+          final_str = "".concat(output.items[j]);
+        }
+
         tool_outputs_body.tool_outputs.push({
           tool_call_id: required_actions[i].id,
-          output: output,
+          output: final_str,
+        });
+      } else if (functionName == "get_total_population_by_state") {
+        console.log(required_actions[i]);
+        let output = await get_total_population_by_state(functionArgs.state_id);
+        let final_str = "";
+
+        for (let j = 0; j < output.items; j++) {
+          final_str = "".concat(output.items[j]);
+        }
+
+        tool_outputs_body.tool_outputs.push({
+          tool_call_id: required_actions[i].id,
+          output: final_str,
         });
       } else {
         throw new Error("Unknown function: " + func_name);

@@ -6,7 +6,7 @@ import styles from "@/styles/Home.module.css";
 import axios from "axios";
 import TypingAnimation from "../components/TypingAnimation";
 import OpenAI from "openai";
-import { GetTotalPopulation } from "../pages/api/_inegi.js";
+import { GetTotalPopulation } from "./api/inegi_api_helper.js";
 import { AssistantManager } from "../pages/api/assistant_manager.js";
 
 let thread;
