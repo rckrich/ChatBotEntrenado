@@ -5,8 +5,6 @@ import { GetTotalPopulation } from "../pages/api/_inegi.js";
 import { AssistantManager } from "../pages/api/assistant_manager.js";
 import { TypeAnimation } from 'react-type-animation';
 
-let thread;
-let run;
 let assistant;
 let threadPosition = 0;
 let isWaiting = true;
@@ -154,36 +152,6 @@ function onClickShow(){
         element.style.display = "none";
       }
     }
-
-async function CallRequiredFunctions(required_actions) {
-  let tool_outputs_body = {
-    tool_outputs: [],
-  };
-  let functionName;
-  let output;
-  let final_str;
-
-  for (let i = 0; i < required_actions.length; i++) {
-    functionName = required_actions[i].function.name;
-
-    if (functionName == "get_total_population") {
-      const output = await get_total_population();
-      console.log(output);
-      tool_outputs_body.tool_outputs.push({
-        tool_call_id: required_actions[i].id,
-        output: output,
-      });
-    } else {
-      throw new Error("Unknown function: " + func_name);
-    }
-  }
-
-  await openai.beta.threads.runs.submitToolOutputs(
-    thread.id,
-    run.id,
-    tool_outputs_body
-  );
-}
 
 async function UserResponse(_inputValue) {
   //Open "thinking" animation
